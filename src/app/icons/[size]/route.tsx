@@ -4,7 +4,6 @@ import { ImageResponse } from "next/og";
 export async function GET(_req: Request, ctx: { params: Promise<{ size: string }> }) {
   const { size: raw } = await ctx.params;
   const size = [180, 192, 512].includes(Number(raw)) ? Number(raw) : 192;
-  const u = size / 64;
   return new ImageResponse(
     (
       <div style={{ width: size, height: size, display: "flex", background: "#2B2420" }}>
@@ -16,6 +15,6 @@ export async function GET(_req: Request, ctx: { params: Promise<{ size: string }
         </svg>
       </div>
     ),
-    { width: size, height: size, headers: { "cache-control": `public, max-age=${Math.round(86400 * u)}` } },
+    { width: size, height: size },
   );
 }

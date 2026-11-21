@@ -174,7 +174,7 @@ button { cursor: pointer; }
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
   padding: 12px 14px; text-decoration: none; min-height: 64px;
 }
-.drink-row .bar { width: 4px; align-self: stretch; border-radius: 4px; background: var(--accent); flex: none; }
+.drink-row .bar { width: 10px; height: 10px; border-radius: 999px; background: var(--accent); flex: none; }
 .drink-row .body { flex: 1; min-width: 0; }
 .drink-row .name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .drink-row .meta { font-size: 14px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -199,13 +199,11 @@ button { cursor: pointer; }
 .sheet-backdrop {
   position: fixed; inset: 0; z-index: 40; background: rgb(0 0 0 / .4);
   display: flex; align-items: flex-end; justify-content: center;
-  animation: fade .15s ease-out;
 }
 .sheet {
   width: 100%; max-width: 560px; max-height: 92dvh;
   background: var(--bg); border-radius: 20px 20px 0 0;
   display: flex; flex-direction: column;
-  animation: up .2s ease-out;
 }
 .sheet-head {
   display: flex; align-items: center; justify-content: space-between;
@@ -219,7 +217,6 @@ button { cursor: pointer; }
 }
 @keyframes up { from { transform: translateY(40px); opacity: .6; } to { transform: none; opacity: 1; } }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .sheet, .sheet-backdrop, .toast { animation: none; } }
 
 .field { display: flex; flex-direction: column; gap: 8px; }
 .label { font-size: 14px; font-weight: 700; color: var(--ink-2); }
@@ -279,7 +276,6 @@ button { cursor: pointer; }
   background: var(--ink); color: var(--bg);
   border-radius: 14px; padding: 12px 12px 12px 16px; min-height: 56px;
   box-shadow: 0 8px 24px rgb(0 0 0 / .25);
-  animation: up .2s ease-out;
 }
 .toast .msg { flex: 1; }
 .toast .msg b { display: block; }
@@ -324,3 +320,70 @@ button { cursor: pointer; }
 
 .settings-list { display: flex; flex-direction: column; gap: 12px; }
 .danger-zone { border-color: color-mix(in srgb, var(--danger) 40%, var(--line)); }
+
+/* ============ 動き ============ */
+/* 共通のイージング：速く出て、ゆっくり止まる */
+:root { --ease-out: cubic-bezier(.2, .8, .2, 1); }
+
+.sheet-backdrop { animation: fade 220ms ease-out; }
+.sheet { animation: sheet-up 300ms var(--ease-out); }
+.sheet-backdrop.closing { animation: fade 200ms ease-in reverse forwards; }
+.sheet-backdrop.closing .sheet { animation: sheet-down 200ms ease-in forwards; }
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes sheet-down { from { transform: none; } to { transform: translateY(100%); } }
+
+.fab { transition: transform 200ms var(--ease-out), opacity 200ms ease; }
+.fab.hide { transform: scale(.6); opacity: 0; pointer-events: none; }
+
+.stars button { transition: transform 160ms cubic-bezier(.2, .9, .3, 1.6), color 120ms ease; }
+.stars button.on { transform: scale(1.1); }
+.stars button:active { transform: scale(.9); }
+
+.chip { transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease; }
+.drink-row { transition: background-color 150ms ease, transform 120ms ease; }
+.drink-row:active { transform: scale(.985); }
+.drink-row.fresh { animation: fresh 1200ms ease-out; }
+@keyframes fresh {
+  0% { background: var(--accent-soft); transform: translateY(-8px); opacity: 0; }
+  25% { transform: none; opacity: 1; }
+  100% { background: var(--surface); }
+}
+.toast { animation: toast-in 260ms cubic-bezier(.2, .9, .3, 1.2); }
+@keyframes toast-in { from { transform: translateY(16px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* 画面遷移（React ViewTransition） */
+::view-transition { pointer-events: none; }
+::view-transition-group(tabbar) { animation: none; z-index: 100; }
+::view-transition-old(tabbar) { display: none; }
+::view-transition-new(tabbar) { animation: none; }
+
+@keyframes vt-fade-in { from { opacity: 0; } }
+@keyframes vt-fade-out { to { opacity: 0; } }
+@keyframes vt-slide { from { translate: var(--vt-from); } to { translate: var(--vt-to); } }
+
+/* タブ：右のタブへは左へ流れる（14%） */
+::view-transition-old(.tab-left)  { --vt-from: 0; --vt-to: -14%; animation: 220ms ease-in both vt-fade-out, 320ms var(--ease-out) both vt-slide; }
+::view-transition-new(.tab-left)  { --vt-from: 14%; --vt-to: 0; animation: 220ms ease-out both vt-fade-in, 320ms var(--ease-out) both vt-slide; }
+::view-transition-old(.tab-right) { --vt-from: 0; --vt-to: 14%; animation: 220ms ease-in both vt-fade-out, 320ms var(--ease-out) both vt-slide; }
+::view-transition-new(.tab-right) { --vt-from: -14%; --vt-to: 0; animation: 220ms ease-out both vt-fade-in, 320ms var(--ease-out) both vt-slide; }
+
+/* 一覧 → 詳細：詳細が右から重なり、下は少し左へ下がる */
+::view-transition-old(.nav-forward) { --vt-from: 0; --vt-to: -22%; animation: 340ms var(--ease-out) both vt-slide, 340ms ease both vt-dim; }
+::view-transition-new(.nav-forward) { --vt-from: 100%; --vt-to: 0; animation: 340ms var(--ease-out) both vt-slide; z-index: 1; }
+::view-transition-old(.nav-back)    { --vt-from: 0; --vt-to: 100%; animation: 300ms var(--ease-out) both vt-slide; z-index: 1; }
+::view-transition-new(.nav-back)    { --vt-from: -22%; --vt-to: 0; animation: 300ms var(--ease-out) both vt-slide, 300ms ease reverse both vt-dim; }
+@keyframes vt-dim { to { filter: brightness(.92); } }
+
+/* 動きを減らす設定：移動をやめて短いフェードだけにする */
+@media (prefers-reduced-motion: reduce) {
+  .sheet, .sheet-backdrop, .toast, .drink-row.fresh { animation: none !important; }
+  .fab, .stars button, .drink-row { transition: none; }
+  .stars button.on { transform: none; }
+  ::view-transition-old(*), ::view-transition-new(*) { animation: 150ms ease both vt-fade-in !important; }
+  ::view-transition-old(*) { animation-name: vt-fade-out !important; }
+  ::view-transition-group(*) { animation-duration: 0s !important; }
+}
+
+.skeleton { background: var(--surface-2); border-radius: 12px; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }

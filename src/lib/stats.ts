@@ -110,12 +110,20 @@ export function candidates(drinks: Drink[], limit = 6): Candidate[] {
 
 /** よく飲むもの（回数順） */
 export function ranking(drinks: Drink[], limit = 5) {
+  /* 1回なめるだけで ★の合計と件数を集める */
+  const sums = new Map<string, { sum: number; n: number }>();
+  for (const d of drinks) {
+    if (!d.rating) continue;
+    const s = sums.get(d.name_key) ?? { sum: 0, n: 0 };
+    s.sum += d.rating;
+    s.n += 1;
+    sums.set(d.name_key, s);
+  }
   return [...groupByName(drinks).values()]
     .filter((c) => c.count >= 2)
     .map((c) => {
-      const rated = drinks.filter((d) => d.name_key === c.latest.name_key && d.rating);
-      const avg = rated.length ? rated.reduce((s, d) => s + (d.rating ?? 0), 0) / rated.length : null;
-      return { ...c, avg };
+      const s = sums.get(c.latest.name_key);
+      return { ...c, avg: s ? s.sum / s.n : null };
     })
     .sort((a, b) => b.count - a.count)
     .slice(0, limit);

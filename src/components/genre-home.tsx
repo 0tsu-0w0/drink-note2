@@ -9,6 +9,7 @@ import type { Drink } from "@/lib/types";
 import { DrinkRow } from "@/components/drink-row";
 import { RecordSheet } from "@/components/record-sheet";
 import { GearIcon, PlusIcon } from "@/components/icons";
+import { tabDirection } from "@/components/page-transition";
 
 type Props = {
   genre: Genre;
@@ -24,6 +25,8 @@ export function GenreHome({ genre, drinks, words, editing, template }: Props) {
   const [sheetSrc, setSheetSrc] = useState({ editing, template });
   /* 週の区切りは端末のタイムゾーンで計算するため、描画後に決める */
   const [now, setNow] = useState<Date | null>(null);
+  /* 直前に保存した記録（一覧で一瞬だけ色づける） */
+  const [freshId, setFreshId] = useState<string | null>(null);
   useEffect(() => setNow(new Date()), []);
 
   useEffect(() => {
@@ -49,7 +52,7 @@ export function GenreHome({ genre, drinks, words, editing, template }: Props) {
     <div className={`page g-${genre}`}>
       <div className="page-head">
         <h1 className="page-title">{GENRES[genre].label}</h1>
-        <Link href="/settings" className="iconlink" aria-label="設定">
+        <Link href="/settings" className="iconlink" aria-label="設定" transitionTypes={["nav-forward"]}>
           <GearIcon />
         </Link>
       </div>
@@ -68,7 +71,7 @@ export function GenreHome({ genre, drinks, words, editing, template }: Props) {
             <div className="k">いちばん</div>
             <div className="v small">
               {week?.best ? (
-                <Link href={`/d/${week.best.id}`} style={{ textDecoration: "none" }}>
+                <Link href={`/d/${week.best.id}`} style={{ textDecoration: "none" }} transitionTypes={["nav-forward"]}>
                   {week.best.name}
                 </Link>
               ) : (
@@ -93,12 +96,12 @@ export function GenreHome({ genre, drinks, words, editing, template }: Props) {
           <>
             <ul className="drink-list">
               {recent.map((d) => (
-                <DrinkRow key={d.id} d={d} showDay={now ? fmtDay(d.drank_at, now) : ""} />
+                <DrinkRow key={d.id} d={d} showDay={now ? fmtDay(d.drank_at, now) : ""} fresh={d.client_id === freshId} />
               ))}
             </ul>
             {drinks.length > recent.length && (
               <p style={{ textAlign: "center", margin: "8px 0 0" }}>
-                <Link href={`/history?genre=${genre}`} className="linkbtn" style={{ textDecoration: "none", display: "inline-block" }}>
+                <Link href={`/history?genre=${genre}`} className="linkbtn" style={{ textDecoration: "none", display: "inline-block" }} transitionTypes={tabDirection(GENRES[genre].path, "/history")}>
                   すべて見る
                 </Link>
               </p>
@@ -115,7 +118,7 @@ export function GenreHome({ genre, drinks, words, editing, template }: Props) {
           <ol className="drink-list">
             {top.map((c) => (
               <li key={c.latest.name_key}>
-                <Link href={`/history?q=${encodeURIComponent(c.latest.name)}&genre=${genre}`} className={`drink-row g-${genre}`}>
+                <Link href={`/history?q=${encodeURIComponent(c.latest.name)}&genre=${genre}`} className={`drink-row g-${genre}`} transitionTypes={tabDirection(GENRES[genre].path, "/history")}>
                   <span className="bar" aria-hidden="true" />
                   <span className="body">
                     <span className="name" style={{ display: "block" }}>
@@ -135,12 +138,16 @@ export function GenreHome({ genre, drinks, words, editing, template }: Props) {
         </section>
       )}
 
-      {!open && (
-        <button type="button" className="fab" onClick={() => setOpen(true)}>
-          <PlusIcon />
-          記録する
-        </button>
-      )}
+      <button
+        type="button"
+        className={open ? "fab hide" : "fab"}
+        aria-hidden={open}
+        tabIndex={open ? -1 : 0}
+        onClick={() => setOpen(true)}
+      >
+        <PlusIcon />
+        記録する
+      </button>
 
       {open && (
         <RecordSheet
@@ -151,6 +158,7 @@ export function GenreHome({ genre, drinks, words, editing, template }: Props) {
           editing={sheetSrc.editing}
           template={sheetSrc.template}
           onClose={close}
+          onSaved={setFreshId}
         />
       )}
     </div>

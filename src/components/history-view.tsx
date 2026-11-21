@@ -9,6 +9,7 @@ import type { Drink } from "@/lib/types";
 import { DrinkRow } from "@/components/drink-row";
 import { SearchIcon } from "@/components/icons";
 import { DRINKS_CHANGED } from "@/components/toast";
+import { DRINK_COLUMNS } from "@/lib/columns";
 
 const PAGE = 30;
 
@@ -59,7 +60,7 @@ export function HistoryView() {
       setError(null);
       let query = createClient()
         .from("drinks")
-        .select("*")
+        .select(DRINK_COLUMNS)
         .order("drank_at", { ascending: false })
         .range(offset, offset + PAGE);
       if (genre) query = query.eq("genre", genre);
@@ -79,7 +80,7 @@ export function HistoryView() {
         setError("読み込めませんでした。通信状態を確認してください。");
         return;
       }
-      const list = (data ?? []) as Drink[];
+      const list = (data ?? []) as unknown as Drink[];
       setHasMore(list.length > PAGE);
       const page = list.slice(0, PAGE);
       setRows((prev) => (offset === 0 ? page : [...prev, ...page]));

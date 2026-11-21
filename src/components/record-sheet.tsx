@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { GENRES, kindOf, kindsOf, normalizeName, type Genre } from "@/lib/domain";
@@ -19,6 +19,8 @@ type Props = {
   /** 「もう一度」の元になる記録 */
   template?: Drink | null;
   onClose: () => void;
+  /** 新規保存したとき（一覧で新しい行を目立たせるため） */
+  onSaved?: (clientId: string) => void;
 };
 
 function toLocalInput(d: Date) {
@@ -31,7 +33,7 @@ function emptyToNull(s: string): string | null {
   return t ? t : null;
 }
 
-export function RecordSheet({ genre, drinks, words: initialWords, editing, template, onClose }: Props) {
+export function RecordSheet({ genre, drinks, words: initialWords, editing, template, onClose: close, onSaved }: Props) {
   const router = useRouter();
   const toast = useToast();
   const openedAt = useRef(Date.now());
@@ -56,6 +58,17 @@ export function RecordSheet({ genre, drinks, words: initialWords, editing, templ
   const [nameFocused, setNameFocused] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [closing, setClosing] = useState(false);
+
+  /* 下がる動きを見せてから閉じる。動きを減らす設定なら即座に閉じる */
+  const onClose = useCallback(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      close();
+      return;
+    }
+    setClosing(true);
+    setTimeout(close, 200);
+  }, [close]);
 
   const def = kindOf(genre, kind);
   const groups = useMemo(() => groupByName(drinks), [drinks]);
@@ -179,6 +192,7 @@ export function RecordSheet({ genre, drinks, words: initialWords, editing, templ
           : "はじめての記録です";
     const clientId = crypto.randomUUID();
     const entrySeconds = Math.round((Date.now() - openedAt.current) / 1000);
+    onSaved?.(clientId);
     onClose();
     toast.show({ title: `${row.name}　${nth}回目`, sub, ms: 4500 });
 
@@ -203,7 +217,7 @@ export function RecordSheet({ genre, drinks, words: initialWords, editing, templ
   const title = editing ? "記録を直す" : `${GENRES[genre].label}を記録`;
 
   return (
-    <div className={`sheet-backdrop g-${genre}`} onClick={onClose}>
+    <div className={`sheet-backdrop g-${genre}${closing ? " closing" : ""}`} onClick={onClose}>
       <div
         className="sheet"
         role="dialog"

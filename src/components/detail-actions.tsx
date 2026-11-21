@@ -40,16 +40,16 @@ export function DetailActions({ drink }: { drink: Drink }) {
         },
       },
     });
-    router.replace("/history");
+    router.replace("/history", { transitionTypes: ["nav-back"] });
     router.refresh();
   }
 
   return (
     <div className="actions">
-      <Link href={`${base}?again=${drink.id}`} className="btn btn-primary">
+      <Link href={`${base}?again=${drink.id}`} className="btn btn-primary" transitionTypes={["nav-back"]}>
         もう一度記録
       </Link>
-      <Link href={`${base}?edit=${drink.id}`} className="btn">
+      <Link href={`${base}?edit=${drink.id}`} className="btn" transitionTypes={["nav-back"]}>
         直す
       </Link>
       <button type="button" className="btn btn-danger" disabled={busy} onClick={() => void remove()}>

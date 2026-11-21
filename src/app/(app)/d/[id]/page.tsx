@@ -3,18 +3,20 @@ import { notFound, redirect } from "next/navigation";
 import { getUser } from "@/lib/supabase/server";
 import { GENRES, kindLabel } from "@/lib/domain";
 import type { Drink } from "@/lib/types";
+import { DRINK_COLUMNS, isUuid } from "@/lib/load";
 import { DetailActions } from "@/components/detail-actions";
 import { DetailWhen } from "@/components/detail-when";
+import { PageTransition } from "@/components/page-transition";
 
 export const metadata = { title: "記録" };
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
+  if (!isUuid(id)) notFound();
   const { supabase, user } = await getUser();
   if (!user) redirect("/");
-  const { data } = await supabase.from("drinks").select("*").eq("id", id).maybeSingle();
-  const d = data as Drink | null;
+  const { data } = await supabase.from("drinks").select(DRINK_COLUMNS).eq("id", id).maybeSingle();
+  const d = data as unknown as Drink | null;
   if (!d) notFound();
 
   const { count } = await supabase
@@ -30,9 +32,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   if (d.place) rows.push(["飲んだ場所", d.place]);
 
   return (
+    <PageTransition>
     <div className={`page g-${d.genre}`}>
       <div className="page-head">
-        <Link href="/history" className="linkbtn" style={{ textDecoration: "none" }}>
+        <Link href="/history" className="linkbtn" style={{ textDecoration: "none" }} transitionTypes={["nav-back"]}>
           ‹ 履歴
         </Link>
       </div>
@@ -78,5 +81,6 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         <DetailActions drink={d} />
       </div>
     </div>
+    </PageTransition>
   );
 }

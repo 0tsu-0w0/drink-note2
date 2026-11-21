@@ -3,11 +3,11 @@ import { kindLabel } from "@/lib/domain";
 import { fmtTime, stars } from "@/lib/stats";
 import type { Drink } from "@/lib/types";
 
-export function DrinkRow({ d, showDay }: { d: Drink; showDay?: string }) {
+export function DrinkRow({ d, showDay, fresh }: { d: Drink; showDay?: string; fresh?: boolean }) {
   const meta = [kindLabel(d.genre, d.kind), d.sub_kind, d.maker, d.place].filter(Boolean).join("・");
   return (
     <li>
-      <Link href={`/d/${d.id}`} className={`drink-row g-${d.genre}`}>
+      <Link href={`/d/${d.id}`} className={`drink-row g-${d.genre}${fresh ? " fresh" : ""}`} transitionTypes={["nav-forward"]}>
         <span className="bar" aria-hidden="true" />
         <span className="body">
           <span className="name" style={{ display: "block" }}>
